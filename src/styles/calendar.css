@@ -1,0 +1,456 @@
+/* ══════════════════════════════════════════════════════
+   CALENDAR — Nexus Booking · Calendly-inspired
+   ══════════════════════════════════════════════════════ */
+
+/* ── Semana ─────────────────────────────────────────── */
+.calendar-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.calendar {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+@media (max-width: 900px) { .calendar { min-width: 680px; } }
+
+/* Gutter de horas */
+.calendar__gutter { border-right: 1px solid var(--color-border); }
+.calendar__gutter-cell {
+  height: 60px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  text-align: right;
+  padding-right: 10px;
+  letter-spacing: 0.03em;
+  transform: translateY(-7px);
+  user-select: none;
+}
+
+/* Columnas de días */
+.calendar__days { display: grid; grid-template-columns: repeat(7, 1fr); }
+
+/* Header de día */
+.calendar__day-header {
+  min-height: 64px;
+  padding: 10px 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: var(--color-surface);
+}
+.calendar__day-name {
+  font-size: 10px;
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  line-height: 1;
+}
+.calendar__day-number {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s;
+  color: var(--color-ink);
+}
+/* Hoy — pill azul primario */
+.calendar__day-header--today .calendar__day-name {
+  color: var(--color-primary);
+}
+.calendar__day-header--today .calendar__day-number {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+
+/* Bloqueado */
+.calendar__day-header--bloqueado { background: var(--color-danger-soft); }
+.calendar__day-header--bloqueado .calendar__day-number { color: var(--color-danger); }
+/* No laborable */
+.calendar__day-header--no-laborable .calendar__day-number { opacity: 0.35; }
+
+/* Columna de citas */
+.calendar__day-column {
+  border-left: 1px solid var(--color-border);
+  position: relative;
+  overflow: hidden;
+}
+.calendar__hour-line {
+  height: 60px;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.12s;
+  position: relative;
+}
+/* Línea media hora — punteada más suave */
+.calendar__hour-line::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  border-top: 1px dashed color-mix(in srgb, var(--color-border) 60%, transparent);
+  pointer-events: none;
+}
+.calendar__hour-line:hover { background: var(--color-primary-soft); }
+
+/* Mobile nav */
+.week-mobile-nav {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.week-mobile-nav__label { font-size: 13px; font-weight: 600; }
+@media (max-width: 768px) { .week-mobile-nav { display: flex; } }
+
+/* ── Appointment blocks ─────────────────────────────── */
+.appointment-block {
+  position: absolute;
+  border-radius: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: filter 0.15s, box-shadow 0.15s;
+  z-index: 2;
+  border: none;
+  box-sizing: border-box;
+}
+.appointment-block:hover {
+  filter: brightness(0.94);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Estados — colores sólidos estilo Calendly */
+.appointment-block--AGENDADA {
+  background: color-mix(in srgb, var(--color-primary) 18%, var(--color-surface));
+  border-left: 3px solid var(--color-primary);
+}
+.appointment-block--CONFIRMADA {
+  background: color-mix(in srgb, var(--color-primary) 30%, var(--color-surface));
+  border-left: 3px solid var(--color-primary);
+}
+.appointment-block--COMPLETADA {
+  background: color-mix(in srgb, var(--color-success) 20%, var(--color-surface));
+  border-left: 3px solid var(--color-success);
+}
+.appointment-block--PAGADA {
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-surface));
+  border-left: 3px solid var(--color-success);
+}
+.appointment-block--CANCELADA {
+  background: var(--color-danger-soft);
+  border-left: 3px solid var(--color-danger);
+  opacity: 0.5;
+}
+.appointment-block--NO_ASISTIO {
+  background: color-mix(in srgb, var(--color-ink-soft) 12%, var(--color-surface));
+  border-left: 3px solid var(--color-ink-soft);
+  opacity: 0.6;
+}
+
+.appointment-block__hora {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.appointment-block__nombre {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.appointment-block__servicio {
+  font-size: 10.5px;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+/* ── Vista Lista ── */
+.lista-citas { display: flex; flex-direction: column; gap: 24px; }
+
+/* Grupo por día */
+.lista-citas__grupo {
+  display: flex;
+  gap: 0;
+}
+
+/* Línea de tiempo izquierda */
+.lista-citas__timeline {
+  width: 80px;
+  flex-shrink: 0;
+  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-right: 16px;
+  position: relative;
+}
+.lista-citas__timeline::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 8px;
+  bottom: 0;
+  width: 1px;
+  background: var(--color-border);
+}
+
+.lista-citas__fecha-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.lista-citas__fecha-num {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-ink);
+  line-height: 1;
+}
+.lista-citas__fecha-num--hoy {
+  color: var(--color-primary);
+}
+
+/* Contenedor de items del día */
+.lista-citas__items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+  padding-left: 16px;
+}
+
+/* Item de cita */
+.lista-citas__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  color: var(--color-ink);
+  position: relative;
+  overflow: hidden;
+}
+.lista-citas__item::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--color-primary);
+  border-radius: 3px 0 0 3px;
+}
+.lista-citas__item--COMPLETADA::before,
+.lista-citas__item--PAGADA::before { background: var(--color-success); }
+.lista-citas__item--CANCELADA::before { background: var(--color-danger); }
+.lista-citas__item--NO_ASISTIO::before { background: var(--color-ink-soft); }
+.lista-citas__item:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  background: var(--color-surface-2, var(--color-surface));
+}
+
+.lista-citas__hora {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  width: 88px;
+  flex-shrink: 0;
+  line-height: 1.4;
+  padding-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.lista-citas__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.lista-citas__nombre { font-size: 13.5px; font-weight: 700; }
+.lista-citas__servicio { font-size: 12px; color: var(--color-ink-soft); }
+.lista-citas__telefono { font-size: 11px; color: var(--color-ink-soft); }
+
+/* ── Vista Mes ── */
+.mes-grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.mes-grilla__encabezado {
+  padding: 12px 0 10px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-ink-soft);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.mes-grilla__dia {
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px 6px;
+  gap: 4px;
+  border: none;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+  vertical-align: top;
+}
+.mes-grilla__dia:hover { background: var(--color-primary-soft); }
+.mes-grilla__dia--fuera { color: var(--color-ink-soft); opacity: 0.28; pointer-events: none; }
+
+/* Número del día */
+.mes-grilla__num {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+}
+.mes-grilla__dia--hoy .mes-grilla__num {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  font-weight: 700;
+}
+.mes-grilla__dia--seleccionado { background: var(--color-primary-soft); }
+.mes-grilla__dia--seleccionado .mes-grilla__num {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* Dots de citas — máx 3 + overflow */
+.mes-grilla__dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 8px;
+}
+.mes-grilla__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+.mes-grilla__dot--success { background: var(--color-success); }
+.mes-grilla__dot--danger  { background: var(--color-danger); }
+.mes-grilla__mas {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  line-height: 1;
+}
+
+/* Bloque de día en lista bajo mes */
+.mes-detalle {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mes-detalle__header {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--color-border);
+  text-transform: capitalize;
+}
+
+/* ── Bloqueado en reservas ── */
+.reservar-calendly__dia--bloqueado {
+  background: var(--color-danger-soft) !important;
+  border-color: rgba(192,69,62,0.3) !important;
+  color: var(--color-danger) !important;
+  cursor: not-allowed;
+}
+
+/* ── Nav buttons rediseñados ── */
+.cal-nav-btn {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px !important;
+}
+.cal-nav-hoy {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 5px 12px !important;
+  border-radius: 8px !important;
+  letter-spacing: 0.02em;
+}
+.calendar__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.calendar__nav-label {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
