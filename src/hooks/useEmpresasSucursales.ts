@@ -27,13 +27,13 @@ export function useEmpresasSucursales() {
   const opcionesEmpresa  = empresas.map((e) => ({
     value: e.id_empresa,
     label: e.nro_empresa != null
-      ? `#${String(e.nro_empresa).padStart(3, '0')} - ${e.nombre_empresa}`
+      ? `${String(e.nro_empresa).padStart(3, '0')} - ${e.nombre_empresa}`
       : e.nombre_empresa
   }))
   const opcionesSucursal = sucursales.map((s) => ({
     value: s.id_sucursal,
     label: s.nro_sucursal != null
-      ? `#${String(s.nro_sucursal).padStart(3, '0')} - ${s.nombre_sucursal}`
+      ? `${String(s.nro_sucursal).padStart(3, '0')} - ${s.nombre_sucursal}`
       : s.nombre_sucursal
   }))
 
