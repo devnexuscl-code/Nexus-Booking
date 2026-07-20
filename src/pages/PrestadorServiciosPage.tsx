@@ -7,11 +7,16 @@ import {
   vincularPrestadorServicio,
   desvincularPrestadorServicio,
 } from '../services/prestadorServiciosAdminService'
-import { listPrestadorIdsDeSucursal } from '../services/prestadorSucursalesService'
 import type { Prestador, Servicio, Categoria } from '../types'
 
 export function PrestadorServiciosPage() {
   const { empresaId, sucursalId, setEmpresaId, setSucursalId, esAdmin, esSupervisor, empresas, sucursalesDeEmpresa } = useFiltroEmpresa()
+
+  // Parametrización por empresa: si false, los servicios son compartidos a
+  // nivel empresa y NO se filtran por sucursal (solo los prestadores lo hacen,
+  // porque físicamente pertenecen a una sucursal). Default true = por sucursal.
+  const serviciosPorSucursal =
+    empresas.find(e => e.id_empresa === empresaId)?.servicios_por_sucursal ?? true
 
   const [prestadores,  setPrestadores]  = useState<Prestador[]>([])
   const [servicios,    setServicios]    = useState<Servicio[]>([])
@@ -40,16 +45,17 @@ export function PrestadorServiciosPage() {
         let qPrests = supabase.from('prestadores').select('*')
           .eq('id_empresa', empresaId).eq('activo', true).order('nombre_prestador')
         if (sucursalId) {
-          const ids = await listPrestadorIdsDeSucursal(sucursalId)
-          qPrests = qPrests.in('id_prestador', ids.length ? ids : [-1]) as any
+          qPrests = qPrests.eq('id_sucursal', sucursalId) as any
         }
 
-        // Servicios y categorías sí conservan id_sucursal
+        // Servicios y categorías: se filtran por sucursal solo si la empresa
+        // opera en modo "por sucursal". En modo compartido se traen todos los
+        // de la empresa.
         let qServs = supabase.from('servicios').select('*')
           .eq('id_empresa', empresaId).eq('activo', true).order('nombre_servicio')
         let qCats = supabase.from('categorias').select('*')
           .eq('id_empresa', empresaId).eq('activo', true).order('nombre_categoria')
-        if (sucursalId) {
+        if (sucursalId && serviciosPorSucursal) {
           qServs = qServs.eq('id_sucursal', sucursalId) as any
           qCats  = qCats.eq('id_sucursal', sucursalId) as any
         }
@@ -67,7 +73,7 @@ export function PrestadorServiciosPage() {
     })()
 
     return () => { cancelado = true }
-  }, [empresaId, sucursalId])
+  }, [empresaId, sucursalId, serviciosPorSucursal])
 
   // Cargar servicios vinculados al prestador seleccionado
   useEffect(() => {
@@ -106,9 +112,12 @@ export function PrestadorServiciosPage() {
     setError(null)
     try {
       if (marcar) {
+        // Guardar el id_sucursal del servicio (no el del prestador): en modo
+        // compartido pueden diferir, y así la fila queda consistente con servicios.
+        const servicio = servicios.find(s => s.id_servicio === idServicio)
         await vincularPrestadorServicio(prestadorSel as number, idServicio, {
           idEmpresa: empresaId as number,
-          idSucursal: sucursalId as number,
+          idSucursal: (servicio?.id_sucursal ?? sucursalId) as number,
         })
         setVinculados(prev => new Set([...prev, idServicio]))
       } else {
@@ -135,7 +144,7 @@ export function PrestadorServiciosPage() {
             id_prestador: prestadorSel as number,
             id_servicio:  s.id_servicio,
             id_empresa:   empresaId,
-            id_sucursal:  sucursalId,
+            id_sucursal:  s.id_sucursal,
           }))
         if (faltantes.length > 0) {
           const { error } = await supabase.from('prestador_servicios').insert(faltantes as any)
