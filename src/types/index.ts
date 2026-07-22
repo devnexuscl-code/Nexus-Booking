@@ -121,6 +121,20 @@ export interface PrestadorAusencia {
 }
 
 // Vista pública segura (sin datos sensibles de prestadores)
+// Vista pública segura de servicios (sin comisión ni datos internos)
+export interface ServicioPublico {
+  id_servicio:     number
+  id_empresa:      number
+  id_sucursal:     number
+  id_categoria:    number
+  nombre_servicio: string
+  valor:           number
+  maneja_iva:      number
+  duracion:        number
+  descripcion:     string | null
+  activo:          boolean
+}
+
 export interface PrestadorPublico {
   id_prestador: number
   id_sucursal: number
